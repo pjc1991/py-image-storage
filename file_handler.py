@@ -20,7 +20,15 @@ class FileChangeHandler(FileSystemEventHandler):
 
     def on_modified(self, event):
         file_path = event.src_path
-        new_file_path = file_path.replace(self.dir_path, self.new_dir_path)
+        # if the file_path is in the uncompressed root directory
+        # add the YYYY-MM directory to the new file path
+        if self.dir_path == os.path.dirname(file_path):
+            file = os.path.basename(file_path)
+            yyyy_mm = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m')
+            print(f'File {file} is in the root directory')
+            new_file_path = os.path.join(self.new_dir_path, yyyy_mm, file)
+        else:
+            new_file_path = file_path.replace(self.dir_path, self.new_dir_path)
         self.queue.put_nowait((file_path, new_file_path))
 
 

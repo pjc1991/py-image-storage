@@ -1,6 +1,7 @@
 import asyncio
 import os
 from asyncio import Queue
+from datetime import datetime
 
 from dotenv import load_dotenv
 from watchdog.observers import Observer
@@ -35,7 +36,16 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
         for file in files:
             print(f'File: {file}')
             file_path = os.path.join(root, file)
-            new_file_path = file_path.replace(uncompressed_path, compressed_path)
+            # if the file_path is in the uncompressed root directory
+            # add the YYYY-MM directory to the new file path
+            # YYYY-MM is the month the file was modified
+            if uncompressed_path == root:
+                yyyy_mm = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m')
+                print(f'File {file} is in the root directory')
+                new_file_path = os.path.join(compressed_path, yyyy_mm, file)
+
+            else:
+                new_file_path = file_path.replace(uncompressed_path, compressed_path)
             print(f'File path: {file_path}')
             print(f'New file path: {new_file_path}')
             que.put_nowait((file_path, new_file_path))
