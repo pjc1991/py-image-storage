@@ -60,7 +60,7 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
         task = asyncio.create_task(handle_file(file_path, new_file_path))
         tasks.append(task)
 
-        if len(tasks) >= 10:
+        if len(tasks) >= 100:
             print('--- waiting for tasks to finish ---')
             await asyncio.gather(*tasks)
             tasks = []
