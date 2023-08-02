@@ -23,7 +23,7 @@ class FileChangeHandler(FileSystemEventHandler):
     def on_modified(self, event):
         file_path = event.src_path
         new_file_path = file_path.replace(self.dir_path, self.new_dir_path)
-        self.queue.put_nowait((handle_file(file_path, new_file_path)))
+        self.queue.put_nowait((file_path, new_file_path))
 
 
 async def handle_file(file_path: str, new_file_path: str):
