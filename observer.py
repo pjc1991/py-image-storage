@@ -11,7 +11,7 @@ from file_handler import FileChangeHandler, handle_file
 load_dotenv()
 
 
-def observe_directory(dir_path: str, new_dir_path: str) -> None:
+async def observe_directory(dir_path: str, new_dir_path: str) -> None:
     event_handler = FileChangeHandler(dir_path, new_dir_path)
     observer = Observer()
     observer.schedule(event_handler, dir_path, recursive=True)
