@@ -35,7 +35,9 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
         for file in files:
             print(f'File: {file}')
             file_path = os.path.join(root, file)
-            new_file_path = file_path.replace(file_path, compressed_path)
+            new_file_path = file_path.replace(uncompressed_path, compressed_path)
+            print(f'File path: {file_path}')
+            print(f'New file path: {new_file_path}')
             que.put_nowait((file_path, new_file_path))
 
     tasks = []
