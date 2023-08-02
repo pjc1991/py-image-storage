@@ -62,6 +62,14 @@ async def handle_file(file_path: str, new_file_path: str):
             #       f'at {datetime.now()}')
             return
 
+        # if the file is already smaller than 1MB, do not compress it
+        if os.path.getsize(file_path) < 1024 * 1024:
+            print(f'File {file_path} is smaller than 1MB')
+            os.rename(file_path, new_file_path)
+            # print(f'File {file_path} has been moved to {new_file_path} '
+            #       f'at {datetime.now()}')
+            return
+
         if not file_path.endswith(('.jpg', '.jpeg', '.png')):
             print(f'File {file_path} is not an image')
             return
