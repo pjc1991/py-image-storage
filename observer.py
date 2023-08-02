@@ -21,7 +21,7 @@ async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Qu
         while True:
             if not queue_provided.empty():
                 file_path, new_file_path = queue_provided.get_nowait()
-                print(f'File {file_path} has been modified at {datetime.now()}')
+                # print(f'File {file_path} has been modified at {datetime.now()}')
                 tasks.append(asyncio.create_task(handle_file(file_path, new_file_path)))
                 if len(tasks) >= 50:
                     print('--- waiting for tasks to finish ---')

@@ -34,9 +34,9 @@ class FileChangeHandler(FileSystemEventHandler):
 
 async def handle_file(file_path: str, new_file_path: str):
     try:
-        print(f'handling file {file_path}')
+        # print(f'handling file {file_path}')
         if not os.path.exists(file_path):
-            print(f'File {file_path} does not exist')
+            # print(f'File {file_path} does not exist')
             return
 
         if not os.path.exists(os.path.dirname(new_file_path)):
@@ -46,8 +46,8 @@ async def handle_file(file_path: str, new_file_path: str):
         if file_path.endswith('.webp'):
             print(f'File {file_path} is already compressed')
             os.rename(file_path, new_file_path)
-            print(f'File {file_path} has been moved to {new_file_path} '
-                  f'at {datetime.now()}')
+            # print(f'File {file_path} has been moved to {new_file_path} '
+            #       f'at {datetime.now()}')
             return
 
         if not file_path.endswith(('.jpg', '.jpeg', '.png')):
@@ -68,8 +68,7 @@ async def handle_file(file_path: str, new_file_path: str):
         # remove the original file
         os.remove(file_path)
         remove_time = datetime.now()
-        print(f'File {file_path} has been removed '
-              f'at {remove_time}')
+        print(f'File {file_path} has been removed at {remove_time}')
 
         # delete the directory if it is empty
         if not os.listdir(os.path.dirname(file_path)) and \
