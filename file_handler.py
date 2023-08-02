@@ -21,7 +21,11 @@ class FileChangeHandler(FileSystemEventHandler):
             return
         elif event.src_path.endswith(('.jpg', '.jpeg', '.png')):
             new_file_path = event.src_path.replace(self.dir_path, self.new_dir_path)
-            compress_image(event.src_path, new_file_path)
+            try:
+                compress_image(event.src_path, new_file_path)
+            except Exception as e:
+                print(f'Error while compressing file {event.src_path}: {e}')
+                return
             compress_time = datetime.now()
             # log the event with timestamp
             print(f'File {event.src_path} has been compressed to {new_file_path} '
