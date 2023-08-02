@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from watchdog.events import FileSystemEventHandler
 
@@ -21,12 +22,14 @@ class FileChangeHandler(FileSystemEventHandler):
         elif event.src_path.endswith(('.jpg', '.jpeg', '.png')):
             new_file_path = event.src_path.replace(self.dir_path, self.new_dir_path)
             compress_image(event.src_path, new_file_path)
+            compress_time = datetime.now()
             # log the event with timestamp
             print(f'File {event.src_path} has been compressed to {new_file_path} '
-                  f'at {event.event_type} {event.time_created}')
+                  f'at {event.event_type} {compress_time}')
 
             # remove the original file
             os.remove(event.src_path)
+            remove_time = datetime.now()
             print(f'File {event.src_path} has been removed '
-                  f'at {event.event_type} {event.time_created}')
+                  f'at {event.event_type} {remove_time}')
 
