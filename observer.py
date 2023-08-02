@@ -35,12 +35,10 @@ async def work_task_until_100(tasks, queue_provided):
         file_path, new_file_path = queue_provided.get_nowait()
         task = asyncio.create_task(handle_file(file_path, new_file_path))
         tasks.append(task)
-
-    if len(tasks) >= 100:
-        print('--- waiting for tasks to finish ---')
-        await asyncio.gather(*tasks)
-        tasks = []
-        return
+        if len(tasks) >= 100:
+            print('--- waiting for tasks to finish ---')
+            await asyncio.gather(*tasks)
+            tasks = []
 
 async def initial_file_handle(uncompressed_path: str, compressed_path: str, que: Queue):
     print('--- searching for files ---')
