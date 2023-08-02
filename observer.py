@@ -29,7 +29,13 @@ compressed = os.getenv('COMPRESSED')
 # check all files in the directory before starting
 for file in os.listdir(uncompressed):
     if file.endswith(('.jpg', '.jpeg', '.png')):
-        handle_file(os.path.join(uncompressed, file), os.path.join(compressed, file))
+        print(f'Handling file {file}')
+        old_file_path = os.path.join(uncompressed, file)
+        new_file_path = os.path.join(compressed, file)
+
+        print(f'Old file path: {old_file_path}')
+        print(f'New file path: {new_file_path}')
+        handle_file(old_file_path, new_file_path)
 
 
 # call the function
