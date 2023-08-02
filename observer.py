@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 from datetime import datetime
@@ -18,7 +19,7 @@ def observe_directory(dir_path: str, new_dir_path: str) -> None:
 
     try:
         while True:
-            time.sleep(1)
+            await asyncio.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()

@@ -1,9 +1,11 @@
 import os
+import asyncio
+
 from datetime import datetime
 
 from watchdog.events import FileSystemEventHandler
 
-from image_handler import compress_image
+from image_handler import compress_image, async_compress_image
 
 
 class FileChangeHandler(FileSystemEventHandler):
@@ -18,10 +20,10 @@ class FileChangeHandler(FileSystemEventHandler):
     def on_modified(self, event):
         file_path = event.src_path
         new_file_path = file_path.replace(self.dir_path, self.new_dir_path)
-        handle_file(event.src_path, new_file_path)
+        return handle_file(event.src_path, new_file_path)
 
 
-def handle_file(file_path: str, new_file_path: str) -> None:
+async def handle_file(file_path: str, new_file_path: str) -> None:
 
     if not os.path.exists(file_path):
         return
@@ -42,7 +44,7 @@ def handle_file(file_path: str, new_file_path: str) -> None:
         return
 
     try:
-        compress_image(file_path, new_file_path)
+        asyncio.ensure_future(async_compress_image(file_path, new_file_path))
     except Exception as e:
         print(f'Error while compressing file {file_path}: {e}')
         return

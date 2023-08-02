@@ -1,3 +1,6 @@
+import asyncio
+import concurrent.futures
+
 from PIL import Image
 
 
@@ -21,3 +24,10 @@ def compress_image(file_path: str, new_file_path: str, max_resolution: int = 192
 
         img.save(new_file_path, 'webp', quality=quality)
         return True
+
+
+async def async_compress_image(file_path: str, new_file_path: str) -> None:
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        await asyncio.get_event_loop().run_in_executor(
+            pool, compress_image, file_path, new_file_path
+        )
