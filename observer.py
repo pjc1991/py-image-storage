@@ -16,17 +16,29 @@ async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Qu
     observer = Observer()
     observer.schedule(event_handler, dir_path, recursive=True)
     observer.start()
-
+    tasks = []
     try:
         while True:
             if not queue_provided.empty():
-                file_path, new_file_path = queue_provided.get_nowait()
-                await handle_file(file_path, new_file_path)
+                await work_task_until_100(tasks, queue_provided)
+                await asyncio.gather(*tasks)
             else:
                 await asyncio.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
+
+
+async def work_task_until_100(tasks, queue_provided):
+    print('--- handling files ---')
+    file_path, new_file_path = queue_provided.get_nowait()
+    task = asyncio.create_task(handle_file(file_path, new_file_path))
+    tasks.append(task)
+
+    if len(tasks) >= 100:
+        print('--- waiting for tasks to finish ---')
+        await asyncio.gather(*tasks)
+        tasks = []
 
 
 async def initial_file_handle(uncompressed_path: str, compressed_path: str, que: Queue):
@@ -52,15 +64,8 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
 
     tasks = []
     while not que.empty():
-        print('--- handling files ---')
-        file_path, new_file_path = que.get_nowait()
-        task = asyncio.create_task(handle_file(file_path, new_file_path))
-        tasks.append(task)
-
-        if len(tasks) >= 100:
-            print('--- waiting for tasks to finish ---')
-            await asyncio.gather(*tasks)
-            tasks = []
+        await work_task_until_100(tasks, que)
+    await asyncio.gather(*tasks)
 
     print('--- finished searching for files ---')
 
