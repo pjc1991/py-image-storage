@@ -20,7 +20,7 @@ async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Qu
     try:
         while True:
             if not queue_provided.empty():
-                await work_task_until_100(tasks, queue_provided)
+                await work_task_until_n(tasks, queue_provided)
                 await asyncio.gather(*tasks)
             else:
                 await asyncio.sleep(1)
@@ -29,16 +29,18 @@ async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Qu
     observer.join()
 
 
-async def work_task_until_100(tasks, queue_provided):
-    while not queue_provided.empty() and len(tasks) < 100:
+async def work_task_until_n(tasks, queue_provided, n=50):
+    while not queue_provided.empty() and len(tasks) < n:
+        if len(tasks) >= n:
+            print('--- waiting for tasks to finish ---')
+            await asyncio.gather(*tasks)
+            tasks = []
         print('--- handling files ---')
         file_path, new_file_path = queue_provided.get_nowait()
         task = asyncio.create_task(handle_file(file_path, new_file_path))
         tasks.append(task)
-        if len(tasks) >= 100:
-            print('--- waiting for tasks to finish ---')
-            await asyncio.gather(*tasks)
-            tasks = []
+
+
 
 async def initial_file_handle(uncompressed_path: str, compressed_path: str, que: Queue):
     print('--- searching for files ---')
@@ -50,7 +52,7 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
             # if the file_path is in the uncompressed root directory
             # add the YYYY-MM directory to the new file path
             # YYYY-MM is the month the file was modified
-            if uncompressed_path == root:
+            if uncompressed_path == root and os.path.isfile(file_path):
                 yyyy_mm = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m')
                 print(f'File {file} is in the root directory')
                 new_file_path = os.path.join(compressed_path, yyyy_mm, file)
@@ -63,7 +65,7 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
 
     tasks = []
     while not que.empty():
-        await work_task_until_100(tasks, que)
+        await work_task_until_n(tasks, que)
     await asyncio.gather(*tasks)
 
     print('--- finished searching for files ---')
