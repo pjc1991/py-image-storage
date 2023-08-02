@@ -64,7 +64,8 @@ async def handle_file(file_path: str, new_file_path: str):
               f'at {remove_time}')
 
         # delete the directory if it is empty
-        if not os.listdir(os.path.dirname(file_path)):
+        if not os.listdir(os.path.dirname(file_path)) and \
+                os.path.dirname(file_path) != os.getenv('UNCOMPRESSED'):
             os.rmdir(os.path.dirname(file_path))
             print(f'Directory {os.path.dirname(file_path)} has been removed '
                   f'at {datetime.now()}')
