@@ -22,7 +22,7 @@ class FileChangeHandler(FileSystemEventHandler):
         file_path = event.src_path
         # if the file_path is in the uncompressed root directory
         # add the YYYY-MM directory to the new file path
-        if self.dir_path == os.path.dirname(file_path):
+        if self.dir_path == os.path.dirname(file_path) and os.path.isfile(file_path):
             file = os.path.basename(file_path)
             yyyy_mm = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m')
             print(f'File {file} is in the root directory')
