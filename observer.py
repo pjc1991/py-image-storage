@@ -1,5 +1,6 @@
 import os
 import time
+from datetime import datetime
 
 from dotenv import load_dotenv
 from watchdog.observers import Observer
@@ -27,6 +28,18 @@ uncompressed = os.getenv('UNCOMPRESSED')
 compressed = os.getenv('COMPRESSED')
 
 # check all files in the directory before starting
+print(f'Checking files in {uncompressed}')
+print(f'Compressed files will be stored in {compressed}'
+      f'if they are not already there'
+      f'and the original files will be removed'
+      f'from {uncompressed}'
+      f'if they are not already removed'
+      f'at {datetime.now()}')
+
+# the number of files in the directory
+print(f'Number of files in {uncompressed}: '
+      f'{len(os.listdir(uncompressed))}')
+
 for file in os.listdir(uncompressed):
     if file.endswith(('.jpg', '.jpeg', '.png')):
         print(f'Handling file {file}')
@@ -36,7 +49,6 @@ for file in os.listdir(uncompressed):
         print(f'Old file path: {old_file_path}')
         print(f'New file path: {new_file_path}')
         handle_file(old_file_path, new_file_path)
-
 
 # call the function
 observe_directory(uncompressed, compressed)
