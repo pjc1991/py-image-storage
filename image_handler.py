@@ -39,8 +39,8 @@ async def async_compress_image(file_path: str, new_file_path: str) -> None:
         # print(f'duplicate event: {file_path} on async_compress_image')
         return
     cache[(file_path, new_file_path)] = True
-    new_file_path_with_extension = new_file_path.split('.')[0] + '.webp'
-
+    file_extension = file_path.split('.')[-1]
+    new_file_path_with_extension = new_file_path.replace(file_extension, 'webp')
     with concurrent.futures.ThreadPoolExecutor() as pool:
         await asyncio.get_event_loop().run_in_executor(
             pool, compress_image, file_path, new_file_path_with_extension
