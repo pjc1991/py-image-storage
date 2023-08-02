@@ -4,7 +4,7 @@ import concurrent.futures
 from PIL import Image
 
 
-def compress_image(file_path: str, new_file_path: str, max_resolution: int = 1920, quality: int = 80) -> bool:
+def compress_image(file_path: str, new_file_path: str, max_resolution: int = 1920, quality: int = 90) -> bool:
     """
     read image from file_path, compress it by max_resolution,
     while keeping the aspect ratio, and save it to file_path
