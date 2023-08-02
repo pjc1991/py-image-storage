@@ -56,3 +56,10 @@ def handle_file(file_path: str, new_file_path: str) -> None:
     remove_time = datetime.now()
     print(f'File {file_path} has been removed '
           f'at {remove_time}')
+
+    # delete the directory if it is empty
+    if not os.listdir(os.path.dirname(file_path)):
+        os.rmdir(os.path.dirname(file_path))
+        print(f'Directory {os.path.dirname(file_path)} has been removed '
+              f'at {datetime.now()}')
+
