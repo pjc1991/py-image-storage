@@ -23,9 +23,6 @@ async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Qu
                 file_path, new_file_path = queue_provided.get_nowait()
                 await handle_file(file_path, new_file_path)
             else:
-                # run initialized every 10 minute
-                if datetime.now().minute % 10 == 0 and datetime.now().second == 0:
-                    initialize(queue_provided)
                 await asyncio.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
@@ -71,10 +68,8 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
 uncompressed = os.getenv('UNCOMPRESSED')
 compressed = os.getenv('COMPRESSED')
 
-
-def initialize(queue_provided: Queue = None):
-    if queue_provided is None:
-        raise ValueError('Queue must be provided')
+if __name__ == "__main__":
+    queue = asyncio.Queue()
 
     # check all files in the directory before starting
     # initial file handling
@@ -82,11 +77,6 @@ def initialize(queue_provided: Queue = None):
     print(f'Compressed files will be stored in {compressed}')
     loop = asyncio.get_event_loop()
     loop.run_until_complete(initial_file_handle(uncompressed, compressed, queue))
-
-
-if __name__ == "__main__":
-    queue = asyncio.Queue()
-    initialize(queue)
 
     # start the observer
     print('--- starting observer ---')
