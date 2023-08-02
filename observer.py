@@ -69,7 +69,7 @@ compressed = os.getenv('COMPRESSED')
 
 
 def initialize(queue_provided: Queue = None):
-    if queue_provided is not None:
+    if queue_provided is None:
         raise ValueError('Queue must be provided')
 
     # check all files in the directory before starting
