@@ -23,8 +23,8 @@ async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Qu
                 file_path, new_file_path = queue_provided.get_nowait()
                 await handle_file(file_path, new_file_path)
             else:
-                # run initialized every minute
-                if datetime.now().second == 0:
+                # run initialized every 10 minute
+                if datetime.now().minute % 10 == 0 and datetime.now().second == 0:
                     initialize(queue_provided)
                 await asyncio.sleep(1)
     except KeyboardInterrupt:
