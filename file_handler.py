@@ -16,23 +16,31 @@ class FileChangeHandler(FileSystemEventHandler):
         super().__init__()
 
     def on_modified(self, event):
-        if event.is_directory:
-            return
-        if event.src_path.endswith('.webp'):
-            # only move the file to the new directory
-            # if it is a webp file
-            new_file_path = event.src_path.replace(self.dir_path, self.new_dir_path)
-            os.rename(event.src_path, new_file_path)
-            print(f'File {event.src_path} has been moved to {new_file_path} '
-                  f'at {event.event_type} {datetime.now()}')
-
-        if not os.path.exists(event.src_path):
-            return
-        elif event.src_path.endswith(('.jpg', '.jpeg', '.png')):
-            handle_file(event.src_path, event.src_path.replace(self.dir_path, self.new_dir_path))
+        file_path = event.src_path
+        new_file_path = file_path.replace(self.dir_path, self.new_dir_path)
+        handle_file(event.src_path, new_file_path)
 
 
 def handle_file(file_path: str, new_file_path: str) -> None:
+
+    if not os.path.exists(file_path):
+        return
+
+    if not os.path.exists(os.path.dirname(new_file_path)):
+        os.makedirs(os.path.dirname(new_file_path))
+
+    if os.path.exists(new_file_path):
+        return
+
+    if not file_path.endswith(('.jpg', '.jpeg', '.png')):
+        return
+
+    if file_path.endswith('.webp'):
+        os.rename(file_path, new_file_path)
+        print(f'File {file_path} has been moved to {new_file_path} '
+              f'at {datetime.now()}')
+        return
+
     try:
         compress_image(file_path, new_file_path)
     except Exception as e:

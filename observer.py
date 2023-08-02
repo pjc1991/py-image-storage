@@ -4,7 +4,7 @@ import time
 from dotenv import load_dotenv
 from watchdog.observers import Observer
 
-from file_handler import FileChangeHandler
+from file_handler import FileChangeHandler, handle_file
 
 load_dotenv()
 
@@ -25,5 +25,12 @@ def observe_directory(dir_path: str, new_dir_path: str) -> None:
 
 uncompressed = os.getenv('UNCOMPRESSED')
 compressed = os.getenv('COMPRESSED')
+
+# check all files in the directory before starting
+for file in os.listdir(uncompressed):
+    if file.endswith(('.jpg', '.jpeg', '.png')):
+        handle_file(os.path.join(uncompressed, file), os.path.join(compressed, file))
+
+
 # call the function
 observe_directory(uncompressed, compressed)
