@@ -30,16 +30,17 @@ async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Qu
 
 
 async def work_task_until_100(tasks, queue_provided):
-    print('--- handling files ---')
-    file_path, new_file_path = queue_provided.get_nowait()
-    task = asyncio.create_task(handle_file(file_path, new_file_path))
-    tasks.append(task)
+    while not queue_provided.empty() and len(tasks) < 100:
+        print('--- handling files ---')
+        file_path, new_file_path = queue_provided.get_nowait()
+        task = asyncio.create_task(handle_file(file_path, new_file_path))
+        tasks.append(task)
 
     if len(tasks) >= 100:
         print('--- waiting for tasks to finish ---')
         await asyncio.gather(*tasks)
         tasks = []
-
+        return
 
 async def initial_file_handle(uncompressed_path: str, compressed_path: str, que: Queue):
     print('--- searching for files ---')
