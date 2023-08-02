@@ -7,7 +7,6 @@ from image_handler import compress_image
 
 
 class FileChangeHandler(FileSystemEventHandler):
-
     dir_path: str = None
     new_dir_path: str = None
 
@@ -18,6 +17,16 @@ class FileChangeHandler(FileSystemEventHandler):
 
     def on_modified(self, event):
         if event.is_directory:
+            return
+        if event.src_path.endswith('.webp'):
+            # only move the file to the new directory
+            # if it is a webp file
+            new_file_path = event.src_path.replace(self.dir_path, self.new_dir_path)
+            os.rename(event.src_path, new_file_path)
+            print(f'File {event.src_path} has been moved to {new_file_path} '
+                  f'at {event.event_type} {datetime.now()}')
+
+        if not os.path.exists(event.src_path):
             return
         elif event.src_path.endswith(('.jpg', '.jpeg', '.png')):
             new_file_path = event.src_path.replace(self.dir_path, self.new_dir_path)
@@ -36,4 +45,3 @@ class FileChangeHandler(FileSystemEventHandler):
             remove_time = datetime.now()
             print(f'File {event.src_path} has been removed '
                   f'at {event.event_type} {remove_time}')
-
