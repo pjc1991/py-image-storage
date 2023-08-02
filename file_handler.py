@@ -1,5 +1,6 @@
 import os
 import asyncio
+from asyncio import Queue
 
 from datetime import datetime
 
@@ -11,19 +12,21 @@ from image_handler import compress_image, async_compress_image
 class FileChangeHandler(FileSystemEventHandler):
     dir_path: str = None
     new_dir_path: str = None
+    queue: Queue = None
 
-    def __init__(self, dir_path: str, new_dir_path: str):
+    def __init__(self, dir_path: str, new_dir_path: str, queue: Queue):
         self.dir_path = dir_path
         self.new_dir_path = new_dir_path
+        self.queue = queue
         super().__init__()
 
     def on_modified(self, event):
         file_path = event.src_path
         new_file_path = file_path.replace(self.dir_path, self.new_dir_path)
-        asyncio.create_task(handle_file(file_path, new_file_path))
+        self.queue.put_nowait((handle_file(file_path, new_file_path)))
 
 
-async def handle_file(file_path: str, new_file_path: str) -> None:
+async def handle_file(file_path: str, new_file_path: str):
 
     if not os.path.exists(file_path):
         return
@@ -44,7 +47,7 @@ async def handle_file(file_path: str, new_file_path: str) -> None:
         return
 
     try:
-        asyncio.ensure_future(async_compress_image(file_path, new_file_path))
+        await async_compress_image(file_path, new_file_path)
     except Exception as e:
         print(f'Error while compressing file {file_path}: {e}')
         return
