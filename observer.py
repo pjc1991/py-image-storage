@@ -37,6 +37,12 @@ async def initial_file_handle(file_path: str, new_file_path: str, que: Queue):
             file_path = os.path.join(root, file)
             new_file_path = file_path.replace(file_path, new_file_path)
             que.put_nowait((file_path, new_file_path))
+
+    tasks = []
+    while not que.empty():
+        file_path, new_file_path = que.get_nowait()
+        tasks.append(handle_file(file_path, new_file_path))
+    await asyncio.gather(*tasks)
     print('--- finished searching for files ---')
 
 
