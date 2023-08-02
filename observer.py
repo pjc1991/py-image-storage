@@ -28,24 +28,26 @@ async def observe_directory(dir_path: str, new_dir_path: str) -> None:
 uncompressed = os.getenv('UNCOMPRESSED')
 compressed = os.getenv('COMPRESSED')
 
-# check all files in the directory before starting
-print(f'Checking files in {uncompressed}')
-print(f'Compressed files will be stored in {compressed}')
+if __name__ == "__main__":
 
-# the number of files in the directory
-print('--- searching for files ---')
+    # check all files in the directory before starting
+    print(f'Checking files in {uncompressed}')
+    print(f'Compressed files will be stored in {compressed}')
 
-# find the files in the directory including subdirectories
-for root, dirs, files in os.walk(uncompressed):
-    print(f'Files in {root}: {files}')
-    for file in files:
-        print(f'File: {file}')
-        file_path = os.path.join(root, file)
-        new_file_path = file_path.replace(uncompressed, compressed)
-        handle_file(file_path, new_file_path)
+    # the number of files in the directory
+    print('--- searching for files ---')
 
-print('--- finished searching for files ---')
+    # find the files in the directory including subdirectories
+    for root, dirs, files in os.walk(uncompressed):
+        print(f'Files in {root}: {files}')
+        for file in files:
+            print(f'File: {file}')
+            file_path = os.path.join(root, file)
+            new_file_path = file_path.replace(uncompressed, compressed)
+            handle_file(file_path, new_file_path)
 
-print('--- starting observer ---')
-# call the function
-observe_directory(uncompressed, compressed)
+    print('--- finished searching for files ---')
+
+    print('--- starting observer ---')
+    # call the function
+    asyncio.run(observe_directory('your_directory_path'))
