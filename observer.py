@@ -29,23 +29,22 @@ compressed = os.getenv('COMPRESSED')
 
 # check all files in the directory before starting
 print(f'Checking files in {uncompressed}')
-print(f'Compressed files will be stored in {compressed}'
-      f'if they are not already there'
-      f'and the original files will be removed'
-      f'from {uncompressed}'
-      f'if they are not already removed'
-      f'at {datetime.now()}')
+print(f'Compressed files will be stored in {compressed}')
 
 # the number of files in the directory
-print(f'Number of files in {uncompressed}: '
-      f'{len(os.listdir(uncompressed))}')
+print('--- searching for files ---')
 
-# find the files that are not compressed recursively
+# find the files in the directory including subdirectories
 for root, dirs, files in os.walk(uncompressed):
+    print(f'Files in {root}: {files}')
     for file in files:
+        print(f'File: {file}')
         file_path = os.path.join(root, file)
         new_file_path = file_path.replace(uncompressed, compressed)
         handle_file(file_path, new_file_path)
 
+print('--- finished searching for files ---')
+
+print('--- starting observer ---')
 # call the function
 observe_directory(uncompressed, compressed)
