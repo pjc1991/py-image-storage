@@ -40,15 +40,12 @@ print(f'Compressed files will be stored in {compressed}'
 print(f'Number of files in {uncompressed}: '
       f'{len(os.listdir(uncompressed))}')
 
-for file in os.listdir(uncompressed):
-    if file.endswith(('.jpg', '.jpeg', '.png')):
-        print(f'Handling file {file}')
-        old_file_path = os.path.join(uncompressed, file)
-        new_file_path = os.path.join(compressed, file)
-
-        print(f'Old file path: {old_file_path}')
-        print(f'New file path: {new_file_path}')
-        handle_file(old_file_path, new_file_path)
+# find the files that are not compressed recursively
+for root, dirs, files in os.walk(uncompressed):
+    for file in files:
+        file_path = os.path.join(root, file)
+        new_file_path = file_path.replace(uncompressed, compressed)
+        handle_file(file_path, new_file_path)
 
 # call the function
 observe_directory(uncompressed, compressed)
