@@ -17,7 +17,7 @@ def compress_image(file_path: str, new_file_path: str, max_resolution: int = 192
 
         # if the image is too large, resize it
         if img.height > max_resolution or img.width > max_resolution:
-            img.thumbnail((max_resolution, max_resolution), Image.ANTIALIAS)
+            img.thumbnail((max_resolution, max_resolution))
 
         img.save(new_file_path, 'webp', quality=quality)
         return True
