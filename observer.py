@@ -29,6 +29,7 @@ uncompressed = os.getenv('UNCOMPRESSED')
 compressed = os.getenv('COMPRESSED')
 
 if __name__ == "__main__":
+    # Replace 'your_directory_path' with the path to your directory.
 
     # check all files in the directory before starting
     print(f'Checking files in {uncompressed}')
@@ -50,4 +51,4 @@ if __name__ == "__main__":
 
     print('--- starting observer ---')
     # call the function
-    asyncio.run(observe_directory('your_directory_path'))
+    asyncio.run(observe_directory(uncompressed, compressed))
