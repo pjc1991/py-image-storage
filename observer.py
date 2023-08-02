@@ -20,26 +20,22 @@ async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Qu
     try:
         while True:
             if not queue_provided.empty():
-                await work_task_until_n(tasks, queue_provided)
-                await asyncio.gather(*tasks)
+                file_path, new_file_path = queue_provided.get_nowait()
+                print(f'File {file_path} has been modified at {datetime.now()}')
+                tasks.append(asyncio.create_task(handle_file(file_path, new_file_path)))
+                if len(tasks) >= 50:
+                    print('--- waiting for tasks to finish ---')
+                    await asyncio.gather(*tasks)
+                    tasks = []
             else:
+                if len(tasks) > 0:
+                    print('--- waiting for tasks to finish ---')
+                    await asyncio.gather(*tasks)
+                    tasks = []
                 await asyncio.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
-
-
-async def work_task_until_n(tasks, queue_provided, n=50):
-    while not queue_provided.empty() and len(tasks) < n:
-        if len(tasks) >= n:
-            print('--- waiting for tasks to finish ---')
-            await asyncio.gather(*tasks)
-            tasks = []
-        print('--- handling files ---')
-        file_path, new_file_path = queue_provided.get_nowait()
-        task = asyncio.create_task(handle_file(file_path, new_file_path))
-        tasks.append(task)
-
 
 
 async def initial_file_handle(uncompressed_path: str, compressed_path: str, que: Queue):
@@ -65,7 +61,14 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
 
     tasks = []
     while not que.empty():
-        await work_task_until_n(tasks, que)
+        if len(tasks) >= 50:
+            print('--- waiting for tasks to finish ---')
+            await asyncio.gather(*tasks)
+            tasks = []
+        print('--- handling files ---')
+        file_path, new_file_path = que.get_nowait()
+        task = asyncio.create_task(handle_file(file_path, new_file_path))
+        tasks.append(task)
     await asyncio.gather(*tasks)
 
     print('--- finished searching for files ---')
