@@ -43,15 +43,15 @@ async def handle_file(file_path: str, new_file_path: str):
             print(f'Creating directory {os.path.dirname(new_file_path)}')
             os.makedirs(os.path.dirname(new_file_path))
 
-        if not file_path.endswith(('.jpg', '.jpeg', '.png')):
-            print(f'File {file_path} is not an image')
-            return
-
         if file_path.endswith('.webp'):
             print(f'File {file_path} is already compressed')
             os.rename(file_path, new_file_path)
             print(f'File {file_path} has been moved to {new_file_path} '
                   f'at {datetime.now()}')
+            return
+
+        if not file_path.endswith(('.jpg', '.jpeg', '.png')):
+            print(f'File {file_path} is not an image')
             return
 
         try:
