@@ -1,7 +1,9 @@
 import os
+import time
 from asyncio import Queue
 from datetime import datetime
 
+from cachetools import TTLCache
 from watchdog.events import FileSystemEventHandler
 
 from image_handler import async_compress_image
@@ -11,6 +13,7 @@ class FileChangeHandler(FileSystemEventHandler):
     dir_path: str = None
     new_dir_path: str = None
     queue: Queue = None
+    cache = TTLCache(maxsize=100, ttl=60)
 
     def __init__(self, dir_path: str, new_dir_path: str, queue: Queue):
         self.dir_path = dir_path
@@ -18,7 +21,16 @@ class FileChangeHandler(FileSystemEventHandler):
         self.queue = queue
         super().__init__()
 
+    def is_key_cached(self, key: tuple) -> bool:
+        return key in self.cache
+
     def on_modified(self, event):
+        seconds = int(time.time())
+        key = (seconds, event.src_path)
+        if self.is_key_cached(key):
+            # print(f'duplicate event: {event.src_path}')
+            return
+        self.cache[key] = True
         file_path = event.src_path
         # if the file_path is in the uncompressed root directory
         # add the YYYY-MM directory to the new file path
