@@ -11,18 +11,21 @@ from file_handler import FileChangeHandler, handle_file
 load_dotenv()
 
 
-async def observe_directory(dir_path: str, new_dir_path: str, queue: Queue) -> None:
-    event_handler = FileChangeHandler(dir_path, new_dir_path, queue)
+async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Queue) -> None:
+    event_handler = FileChangeHandler(dir_path, new_dir_path, queue_provided)
     observer = Observer()
     observer.schedule(event_handler, dir_path, recursive=True)
     observer.start()
 
     try:
         while True:
-            if not queue.empty():
-                file_path, new_file_path = queue.get_nowait()
+            if not queue_provided.empty():
+                file_path, new_file_path = queue_provided.get_nowait()
                 await handle_file(file_path, new_file_path)
             else:
+                # run initialized every minute
+                if datetime.now().second == 0:
+                    initialize(queue_provided)
                 await asyncio.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
@@ -64,8 +67,10 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
 uncompressed = os.getenv('UNCOMPRESSED')
 compressed = os.getenv('COMPRESSED')
 
-if __name__ == "__main__":
-    queue = asyncio.Queue()
+
+def initialize(queue_provided: Queue = None):
+    if queue_provided is not None:
+        raise ValueError('Queue must be provided')
 
     # check all files in the directory before starting
     # initial file handling
@@ -73,6 +78,11 @@ if __name__ == "__main__":
     print(f'Compressed files will be stored in {compressed}')
     loop = asyncio.get_event_loop()
     loop.run_until_complete(initial_file_handle(uncompressed, compressed, queue))
+
+
+if __name__ == "__main__":
+    queue = asyncio.Queue()
+    initialize(queue)
 
     # start the observer
     print('--- starting observer ---')
