@@ -6,7 +6,7 @@ This is an application, which keep your image files to be small file sized. I bu
 
 ## How it works?
 
-This application is using 'Pillow' library to compress image files. It will compress image files in the source path and save them to the destination path. If the destination path is not exist, it will create it automatically.
+This application is using 'Pillow' library to compress image files. It will compress image files in the source path and save them to the destination path. If the destination path is not exist, it will create it automatically. The original file will be deleted. 
 
 It keeps observing the source path, if there is a new image file, it will compress it and save it to the destination path while it is running.
 
