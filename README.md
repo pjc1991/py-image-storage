@@ -78,8 +78,8 @@ Sorry, I didn't make a script for this.
 ---
 ## More Things to do ~
 
-- [X] Implement asynch I/O
-- [ ] Better performance and structures for asynch I/O
+- [X] Implement async I/O
+- [ ] Better performance and structures for async I/O
 - [ ] Make a script for stopping application
 - [ ] Make this application as a service (systemd)
 - [ ] Make a script for installation (not sure if it is necessary
