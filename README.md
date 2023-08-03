@@ -81,7 +81,8 @@ Sorry, I didn't make a script for this.
 - [X] Implement asynch I/O
 - [ ] Better performance and structures for asynch I/O
 - [ ] Make a script for stopping application
-- [ ] Make a script for installation
+- [ ] Make this application as a service (systemd)
+- [ ] Make a script for installation (not sure if it is necessary
 
 ## Tested environment
 
