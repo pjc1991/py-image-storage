@@ -86,6 +86,7 @@ if __name__ == "__main__":
     print(f'Compressed files will be stored in {compressed}')
     loop = asyncio.get_event_loop()
     loop.run_until_complete(initial_file_handle(uncompressed, compressed, queue))
+    loop.close()
 
     # start the observer
     print('--- starting observer ---')
