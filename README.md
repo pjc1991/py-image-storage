@@ -65,6 +65,11 @@ COMPRESSED=\\NAS\FILES\compressed # compressed image files path, destination pat
 ```shell
 nohup python -u observer.py &
 tail -f nohup.out
+
+# or you just
+./start.sh
+# it gives you tail =f nohup.out
+# to stop watching log : CTRL+C
 ```
 
 ## How to stop application
@@ -72,8 +77,19 @@ tail -f nohup.out
 ```shell
 ps -ef | grep observer.py
 kill -9 <pid>
+
+# or you just
+./stop.sh
 ```
-Sorry, I didn't make a script for this.
+
+## I want to watch some logs
+
+```shell
+tail -f nohup.out
+
+# or you just
+./watch_logs.sh
+```
 
 ---
 ## More Things to do ~
