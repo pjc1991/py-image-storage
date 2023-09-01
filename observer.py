@@ -12,21 +12,19 @@ load_dotenv()
 
 
 async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Queue) -> None:
+    semaphore = asyncio.Semaphore(50)
+
     event_handler = FileChangeHandler(dir_path, new_dir_path, queue_provided)
     observer = Observer()
     observer.schedule(event_handler, dir_path, recursive=True)
     observer.start()
     tasks = []
+
     try:
         while True:
             if not queue_provided.empty():
                 file_path, new_file_path = queue_provided.get_nowait()
-                # print(f'File {file_path} has been modified at {datetime.now()}')
-                tasks.append(asyncio.create_task(handle_file(file_path, new_file_path)))
-                if len(tasks) >= 50:
-                    print('--- waiting for tasks to finish ---')
-                    await asyncio.gather(*tasks)
-                    tasks = []
+                tasks.append(asyncio.create_task(handle_file_with_semaphore(file_path, new_file_path, semaphore)))
             else:
                 if len(tasks) > 0:
                     print('--- waiting for tasks to finish ---')
@@ -38,6 +36,11 @@ async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Qu
     observer.join()
 
 
+async def handle_file_with_semaphore(file_path: str, new_file_path: str, semaphore):
+    async with semaphore:
+        await handle_file(file_path, new_file_path)
+
+
 async def initial_file_handle(uncompressed_path: str, compressed_path: str, que: Queue):
     print('--- searching for files ---')
     for root, dirs, files in os.walk(uncompressed_path):
@@ -45,9 +48,6 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
         for file in files:
             print(f'File: {file}')
             file_path = os.path.join(root, file)
-            # if the file_path is in the uncompressed root directory
-            # add the YYYY-MM directory to the new file path
-            # YYYY-MM is the month the file was modified
             if uncompressed_path == root and os.path.isfile(file_path):
                 yyyy_mm = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m')
                 print(f'File {file} is in the root directory')
@@ -58,21 +58,16 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
             print(f'File path: {file_path}')
             print(f'New file path: {new_file_path}')
             que.put_nowait((file_path, new_file_path))
-
+    semaphore = asyncio.Semaphore(50)
     tasks = []
     while not que.empty():
-        if len(tasks) >= 50:
-            print('--- waiting for tasks to finish ---')
-            await asyncio.gather(*tasks)
-            tasks = []
         print('--- handling files ---')
         file_path, new_file_path = que.get_nowait()
-        task = asyncio.create_task(handle_file(file_path, new_file_path))
+        task = asyncio.create_task(handle_file_with_semaphore(file_path, new_file_path, semaphore))
         tasks.append(task)
     await asyncio.gather(*tasks)
 
     print('--- finished searching for files ---')
-
 
 uncompressed = os.getenv('UNCOMPRESSED')
 compressed = os.getenv('COMPRESSED')
