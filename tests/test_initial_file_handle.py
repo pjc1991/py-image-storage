@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 import unittest
 from distutils.dir_util import copy_tree
 
@@ -29,11 +30,19 @@ class TestInitialFileHandle(unittest.TestCase):
         queue = asyncio.Queue()
 
         # when
+        # measure the time it takes to run the initial_file_handle function
+
+        start_time = time.perf_counter()
+
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(observer.initial_file_handle('tests/uncompressed', 'tests/compressed', que=queue))
+        loop.run_until_complete(observer.initial_file_handle(uncompressed_folder, compressed_folder, que=queue))
         loop.close()
 
+        end_time = time.perf_counter()
+        execution_time = end_time - start_time
+
         # then
+        print(f'Execution time: {execution_time} seconds')
         pass
 
         # clean up
