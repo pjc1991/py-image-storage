@@ -23,7 +23,8 @@ async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Qu
         while True:
             if not queue_provided.empty():
                 await task_handler.handle_tasks(queue_provided)
-            await asyncio.sleep(1)
+            else:
+                await asyncio.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
