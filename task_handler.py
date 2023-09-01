@@ -14,7 +14,7 @@ class TaskHandleType(enum.Enum):
     aiomultiprocess = 'aiomultiprocess'
 
 
-mode = TaskHandleType.aiomultiprocess
+mode = TaskHandleType.bounded_semaphore
 
 
 async def __handle_file_with_semaphore__(file_path: str, new_file_path: str, semaphore):
