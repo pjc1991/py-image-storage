@@ -6,7 +6,8 @@ from datetime import datetime
 from dotenv import load_dotenv
 from watchdog.observers import Observer
 
-from file_handler import FileChangeHandler, handle_file
+import task_handler
+from file_handler import FileChangeHandler
 
 load_dotenv()
 
@@ -18,27 +19,14 @@ async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Qu
     observer = Observer()
     observer.schedule(event_handler, dir_path, recursive=True)
     observer.start()
-    tasks = []
-
     try:
         while True:
             if not queue_provided.empty():
-                file_path, new_file_path = queue_provided.get_nowait()
-                tasks.append(asyncio.create_task(handle_file_with_semaphore(file_path, new_file_path, semaphore)))
-            else:
-                if len(tasks) > 0:
-                    print('--- waiting for tasks to finish ---')
-                    await asyncio.gather(*tasks)
-                    tasks = []
-                await asyncio.sleep(1)
+                await task_handler.handle_tasks(queue_provided)
+            await asyncio.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
-
-
-async def handle_file_with_semaphore(file_path: str, new_file_path: str, semaphore):
-    async with semaphore:
-        await handle_file(file_path, new_file_path)
 
 
 async def initial_file_handle(uncompressed_path: str, compressed_path: str, que: Queue):
@@ -58,14 +46,8 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
             print(f'File path: {file_path}')
             print(f'New file path: {new_file_path}')
             que.put_nowait((file_path, new_file_path))
-    semaphore = asyncio.Semaphore(50)
-    tasks = []
-    while not que.empty():
-        print('--- handling files ---')
-        file_path, new_file_path = que.get_nowait()
-        task = asyncio.create_task(handle_file_with_semaphore(file_path, new_file_path, semaphore))
-        tasks.append(task)
-    await asyncio.gather(*tasks)
+
+    await task_handler.handle_tasks(que)
 
     print('--- finished searching for files ---')
 
