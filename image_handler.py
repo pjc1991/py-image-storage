@@ -1,5 +1,4 @@
 import asyncio
-import concurrent.futures
 
 from PIL import Image
 from cachetools import TTLCache, cached
@@ -42,7 +41,5 @@ async def async_compress_image(file_path: str, new_file_path: str) -> None:
     file_extension = file_path.split('.')[-1]
     new_file_path_with_extension_replaced = new_file_path.replace(file_extension, 'webp')
     print(f'Compressing {file_path} to {new_file_path_with_extension_replaced}')
-    with concurrent.futures.ThreadPoolExecutor() as pool:
-        await asyncio.get_event_loop().run_in_executor(
-            pool, compress_image, file_path, new_file_path_with_extension_replaced
-        )
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, compress_image, file_path, new_file_path_with_extension_replaced)

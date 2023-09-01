@@ -16,13 +16,13 @@ class TestInitialFileHandle(unittest.TestCase):
         current_path = os.getcwd()
 
         # original folder for dummy images
-        original_folder = current_path + os.sep + os.sep + 'test_images' + os.sep + 'original'
+        original_folder = current_path + os.sep + 'test_images' + os.sep + 'original'
 
         # uncompressed folder for storing the uncompressed images
-        uncompressed_folder = current_path + os.sep + os.sep + 'test_images' + os.sep + 'uncompressed'
+        uncompressed_folder = current_path + os.sep + 'test_images' + os.sep + 'uncompressed'
 
         # compressed folder for the result
-        compressed_folder = current_path + os.sep + os.sep + 'test_images' + os.sep + 'compressed'
+        compressed_folder = current_path + os.sep + 'test_images' + os.sep + 'compressed'
 
         # copy the files from tests/test_images/original to tests/test_images/uncompressed
         copy(original_folder, uncompressed_folder)
@@ -69,14 +69,15 @@ class TestInitialFileHandle(unittest.TestCase):
         # compressed folder for the result
         compressed_folder = current_path + os.sep + 'test_images' + os.sep + 'compressed'
 
-        # copy the files from tests/test_images/original to tests/test_images/uncompressed
-        copy(original_folder, uncompressed_folder)
-
         # prepare the queue
         queue = asyncio.Queue()
 
         # when
+        copy(original_folder, uncompressed_folder)
+        asyncio_execution_time = task_handle(task_handler.TaskHandleType.asyncio, queue, uncompressed_folder, compressed_folder)
+
         # measure the time it takes to run the initial_file_handle function
+        copy(original_folder, uncompressed_folder)
         aio_execution_time = task_handle(task_handler.TaskHandleType.aiomultiprocess, queue, uncompressed_folder, compressed_folder)
 
         # change the mode to multi-process
@@ -87,10 +88,16 @@ class TestInitialFileHandle(unittest.TestCase):
         copy(original_folder, uncompressed_folder)
         bs_execution_time = task_handle(task_handler.TaskHandleType.bounded_semaphore, queue, uncompressed_folder, compressed_folder)
 
+        # change the mode to process pool executor
+        copy(original_folder, uncompressed_folder)
+        ppe_execution_time = task_handle(task_handler.TaskHandleType.process_pool_executor, queue, uncompressed_folder, compressed_folder)
+
         # then
+        print(f'Execution time for asyncio: {asyncio_execution_time} seconds')
         print(f'Execution time for aiomultiprocess: {aio_execution_time} seconds')
         print(f'Execution time for multi process: {mp_execution_time} seconds')
         print(f'Execution time for bounded semaphore: {bs_execution_time} seconds')
+        print(f'Execution time for process pool executor: {ppe_execution_time} seconds')
         pass
 
 

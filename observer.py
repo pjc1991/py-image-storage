@@ -13,8 +13,6 @@ load_dotenv()
 
 
 async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Queue) -> None:
-    semaphore = asyncio.Semaphore(50)
-
     event_handler = FileChangeHandler(dir_path, new_dir_path, queue_provided)
     observer = Observer()
     observer.schedule(event_handler, dir_path, recursive=True)
