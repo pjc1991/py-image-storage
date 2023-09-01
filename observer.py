@@ -6,33 +6,24 @@ from datetime import datetime
 from dotenv import load_dotenv
 from watchdog.observers import Observer
 
-from file_handler import FileChangeHandler, handle_file
+import task_handler
+from file_handler import FileChangeHandler
 
 load_dotenv()
 
 
 async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Queue) -> None:
+    semaphore = asyncio.Semaphore(50)
+
     event_handler = FileChangeHandler(dir_path, new_dir_path, queue_provided)
     observer = Observer()
     observer.schedule(event_handler, dir_path, recursive=True)
     observer.start()
-    tasks = []
     try:
         while True:
             if not queue_provided.empty():
-                file_path, new_file_path = queue_provided.get_nowait()
-                # print(f'File {file_path} has been modified at {datetime.now()}')
-                tasks.append(asyncio.create_task(handle_file(file_path, new_file_path)))
-                if len(tasks) >= 50:
-                    print('--- waiting for tasks to finish ---')
-                    await asyncio.gather(*tasks)
-                    tasks = []
-            else:
-                if len(tasks) > 0:
-                    print('--- waiting for tasks to finish ---')
-                    await asyncio.gather(*tasks)
-                    tasks = []
-                await asyncio.sleep(1)
+                await task_handler.handle_tasks(queue_provided)
+            await asyncio.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
@@ -45,9 +36,6 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
         for file in files:
             print(f'File: {file}')
             file_path = os.path.join(root, file)
-            # if the file_path is in the uncompressed root directory
-            # add the YYYY-MM directory to the new file path
-            # YYYY-MM is the month the file was modified
             if uncompressed_path == root and os.path.isfile(file_path):
                 yyyy_mm = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m')
                 print(f'File {file} is in the root directory')
@@ -59,20 +47,9 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
             print(f'New file path: {new_file_path}')
             que.put_nowait((file_path, new_file_path))
 
-    tasks = []
-    while not que.empty():
-        if len(tasks) >= 50:
-            print('--- waiting for tasks to finish ---')
-            await asyncio.gather(*tasks)
-            tasks = []
-        print('--- handling files ---')
-        file_path, new_file_path = que.get_nowait()
-        task = asyncio.create_task(handle_file(file_path, new_file_path))
-        tasks.append(task)
-    await asyncio.gather(*tasks)
+    await task_handler.handle_tasks(que)
 
     print('--- finished searching for files ---')
-
 
 uncompressed = os.getenv('UNCOMPRESSED')
 compressed = os.getenv('COMPRESSED')
