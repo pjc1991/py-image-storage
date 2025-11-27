@@ -7,6 +7,9 @@ from asyncio import Queue
 from aiomultiprocess import Pool
 
 from file_handler import handle_file
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class TaskHandleType(enum.Enum):
@@ -93,6 +96,10 @@ async def __handle_tasks_asyncio__(queue):
 
 
 async def handle_tasks(queue: Queue):
+    task_count = queue.qsize()
+    if task_count > 0:
+        logger.info(f'Processing {task_count} tasks using {mode.value} mode')
+
     if mode == TaskHandleType.asyncio:
         await __handle_tasks_asyncio__(queue)
         return
