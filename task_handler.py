@@ -36,10 +36,12 @@ async def __handle_tasks_semaphore__(queue: Queue):
 
 
 def __process_task__(file_path, new_file_path):
+    import asyncio
     asyncio.run(handle_file(file_path, new_file_path))
 
 
 def __process_task__arg(args):
+    import asyncio
     file_path, new_file_path = args
     asyncio.run(handle_file(file_path, new_file_path))
 
