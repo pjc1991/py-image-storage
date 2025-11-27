@@ -51,7 +51,7 @@ def __handle_tasks_multi_process__(queue):
         tasks.append((file_path, new_file_path))
 
     with multiprocessing.Pool() as pool:
-        pool.map(__process_task__, tasks)
+        pool.map(__process_task__arg, tasks)
 
 
 async def __handle_task__(args):
