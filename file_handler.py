@@ -100,24 +100,26 @@ async def handle_file(file_path: str, new_file_path: str):
             return
 
         if not file_path.endswith(('.jpg', '.jpeg', '.png')):
-            print(f'File {file_path} is not an image')
-            return
+            print(f'File {file_path} is not an image, moving without conversion')
+            os.rename(file_path, new_file_path)
+            print(f'File {file_path} has been moved to {new_file_path} '
+                  f'at {datetime.now()}')
+        else:
+            try:
+                print(f'Compressing file {file_path} to {new_file_path}')
+                await async_compress_image(file_path, new_file_path)
+            except Exception as e:
+                print(f'Error while compressing file {file_path}: {e}')
+                return
+            compress_time = datetime.now()
+            # log the event with timestamp
+            print(f'File {file_path} has been compressed to {new_file_path} '
+                  f'at {compress_time}')
 
-        try:
-            print(f'Compressing file {file_path} to {new_file_path}')
-            await async_compress_image(file_path, new_file_path)
-        except Exception as e:
-            print(f'Error while compressing file {file_path}: {e}')
-            return
-        compress_time = datetime.now()
-        # log the event with timestamp
-        print(f'File {file_path} has been compressed to {new_file_path} '
-              f'at {compress_time}')
-
-        # remove the original file
-        os.remove(file_path)
-        remove_time = datetime.now()
-        print(f'File {file_path} has been removed at {remove_time}')
+            # remove the original file
+            os.remove(file_path)
+            remove_time = datetime.now()
+            print(f'File {file_path} has been removed at {remove_time}')
 
         # delete the directory if it is empty
         if not os.listdir(os.path.dirname(file_path)) and \
