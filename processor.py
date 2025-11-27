@@ -36,7 +36,9 @@ class FileProcessor:
         """
         self.config = config
         self.compressor = compressor
-        logger.debug('FileProcessor initialized')
+        # Semaphore to limit concurrent compressions
+        self.semaphore = asyncio.Semaphore(config.max_concurrent_compressions)
+        logger.debug(f'FileProcessor initialized (max concurrent: {config.max_concurrent_compressions})')
 
     async def wait_for_file_ready(
         self,
@@ -90,68 +92,82 @@ class FileProcessor:
         Returns:
             True if successfully processed, False otherwise
         """
-        try:
-            logger.debug(f'Processing: {source_path}')
+        # Use semaphore to limit concurrent processing
+        async with self.semaphore:
+            try:
+                logger.debug(f'Processing: {source_path}')
 
-            # Check if file exists
-            if not os.path.exists(source_path):
-                logger.debug(f'File does not exist: {source_path}')
-                return False
+                # Check if file exists
+                if not os.path.exists(source_path):
+                    logger.debug(f'File does not exist: {source_path}')
+                    return False
 
-            # Skip directories
-            if os.path.isdir(source_path):
-                logger.debug(f'Skipping directory: {source_path}')
-                return False
+                # Skip directories
+                if os.path.isdir(source_path):
+                    logger.debug(f'Skipping directory: {source_path}')
+                    return False
 
-            # Wait for file to be ready
-            if not await self.wait_for_file_ready(source_path):
-                logger.warning(f'File not ready, skipping: {source_path}')
-                return False
+                # Skip if destination already exists (performance optimization)
+                if self.config.skip_existing_files:
+                    # Check for both original extension and .webp extension
+                    dest_path_webp = self.compressor._ensure_webp_extension(dest_path)
+                    if os.path.exists(dest_path) or os.path.exists(dest_path_webp):
+                        logger.debug(f'Destination already exists, skipping: {dest_path}')
+                        # Remove source file since destination exists
+                        if os.path.exists(source_path):
+                            os.remove(source_path)
+                            logger.debug(f'Removed source (destination exists): {source_path}')
+                        return True
 
-            # Create destination directory if needed
-            dest_dir = os.path.dirname(dest_path)
-            if not os.path.exists(dest_dir):
-                logger.info(f'Creating directory: {dest_dir}')
-                os.makedirs(dest_dir, exist_ok=True)
+                # Wait for file to be ready
+                if not await self.wait_for_file_ready(source_path):
+                    logger.warning(f'File not ready, skipping: {source_path}')
+                    return False
 
-            # Determine action based on file type
-            file_name = os.path.basename(source_path)
+                # Create destination directory if needed
+                dest_dir = os.path.dirname(dest_path)
+                if not os.path.exists(dest_dir):
+                    logger.info(f'Creating directory: {dest_dir}')
+                    os.makedirs(dest_dir, exist_ok=True)
 
-            # Already WebP - just move
-            if source_path.lower().endswith('.webp'):
-                logger.info(f'Already WebP, moving: {file_name}')
-                os.rename(source_path, dest_path)
+                # Determine action based on file type
+                file_name = os.path.basename(source_path)
+
+                # Already WebP - just move
+                if source_path.lower().endswith('.webp'):
+                    logger.info(f'Already WebP, moving: {file_name}')
+                    os.rename(source_path, dest_path)
+                    return True
+
+                # Should compress?
+                if self.compressor.should_compress(source_path):
+                    # Compress the image
+                    success = await self.compressor.compress(source_path, dest_path)
+                    if success:
+                        # Remove original after successful compression
+                        # Double-check file still exists before removing
+                        if os.path.exists(source_path):
+                            os.remove(source_path)
+                            logger.debug(f'Removed original: {source_path}')
+                        else:
+                            logger.warning(f'Original file already removed: {source_path}')
+                    else:
+                        logger.error(f'Compression failed, keeping original: {source_path}')
+                        return False
+                else:
+                    # Not an image or too small - just move
+                    file_size_kb = os.path.getsize(source_path) / 1024
+                    logger.info(f'Moving without compression: {file_name} ({file_size_kb:.1f}KB)')
+                    os.rename(source_path, dest_path)
+
+                # Clean up empty directories
+                self._cleanup_empty_directory(source_path)
+
                 return True
 
-            # Should compress?
-            if self.compressor.should_compress(source_path):
-                # Compress the image
-                success = await self.compressor.compress(source_path, dest_path)
-                if success:
-                    # Remove original after successful compression
-                    # Double-check file still exists before removing
-                    if os.path.exists(source_path):
-                        os.remove(source_path)
-                        logger.debug(f'Removed original: {source_path}')
-                    else:
-                        logger.warning(f'Original file already removed: {source_path}')
-                else:
-                    logger.error(f'Compression failed, keeping original: {source_path}')
-                    return False
-            else:
-                # Not an image or too small - just move
-                file_size_kb = os.path.getsize(source_path) / 1024
-                logger.info(f'Moving without compression: {file_name} ({file_size_kb:.1f}KB)')
-                os.rename(source_path, dest_path)
-
-            # Clean up empty directories
-            self._cleanup_empty_directory(source_path)
-
-            return True
-
-        except Exception as e:
-            logger.error(f'Error processing file {source_path}: {e}', exc_info=True)
-            return False
+            except Exception as e:
+                logger.error(f'Error processing file {source_path}: {e}', exc_info=True)
+                return False
 
     def _cleanup_empty_directory(self, file_path: str) -> None:
         """

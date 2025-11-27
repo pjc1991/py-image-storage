@@ -28,6 +28,10 @@ class Config:
     cache_ttl: int = 60
     log_level: str = 'INFO'
 
+    # Performance settings
+    max_concurrent_compressions: int = 4  # Limit concurrent compressions
+    skip_existing_files: bool = True  # Skip files that already exist at destination
+
     @classmethod
     def from_env(cls, env_file: Optional[str] = None) -> 'Config':
         """
@@ -59,7 +63,9 @@ class Config:
                 compression_quality=cls._get_int('COMPRESSION_QUALITY', 90),
                 cache_maxsize=cls._get_int('CACHE_MAXSIZE', 100),
                 cache_ttl=cls._get_int('CACHE_TTL', 60),
-                log_level=os.getenv('LOG_LEVEL', 'INFO').upper()
+                log_level=os.getenv('LOG_LEVEL', 'INFO').upper(),
+                max_concurrent_compressions=cls._get_int('MAX_CONCURRENT_COMPRESSIONS', 4),
+                skip_existing_files=os.getenv('SKIP_EXISTING_FILES', 'true').lower() == 'true'
             )
 
             return config
@@ -140,6 +146,12 @@ class Config:
         if self.log_level not in valid_levels:
             raise ConfigurationError(
                 f"log_level must be one of {valid_levels}, got: {self.log_level}"
+            )
+
+        # Validate performance settings
+        if self.max_concurrent_compressions <= 0:
+            raise ConfigurationError(
+                f"max_concurrent_compressions must be positive, got: {self.max_concurrent_compressions}"
             )
 
     def __str__(self) -> str:

@@ -28,6 +28,8 @@ class TestFileProcessor:
         config.uncompressed_path = str(uncompressed)
         config.compressed_path = str(compressed)
         config.min_file_size_kb = 10  # Small threshold for testing
+        config.max_concurrent_compressions = 4  # Performance setting
+        config.skip_existing_files = False  # Don't skip in tests
         return config
 
     @pytest.fixture
