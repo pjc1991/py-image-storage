@@ -87,6 +87,16 @@ class Application:
         logger.info(f'Compression quality: {self.config.compression_quality}%')
         logger.info(f'Max resolution: {self.config.max_resolution}px')
         logger.info(f'Min file size: {self.config.min_file_size_kb}KB')
+
+        # Log performance settings
+        import os
+        import multiprocessing
+        cpu_count = multiprocessing.cpu_count()
+        if os.getenv('MAX_CONCURRENT_COMPRESSIONS') is None:
+            logger.info(f'Max concurrent compressions: {self.config.max_concurrent_compressions} (auto-detected from {cpu_count} CPU cores)')
+        else:
+            logger.info(f'Max concurrent compressions: {self.config.max_concurrent_compressions} (manually configured)')
+        logger.info(f'Skip existing files: {self.config.skip_existing_files}')
         logger.info('='*60)
 
         # Setup components

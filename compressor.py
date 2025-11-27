@@ -15,6 +15,12 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
+# Note: We use ThreadPoolExecutor (default) instead of ProcessPoolExecutor because:
+# 1. PIL releases GIL during image operations (C extensions)
+# 2. ProcessPoolExecutor has higher overhead (pickling, IPC)
+# 3. Cache sharing between processes is complex
+# For image compression specifically, ThreadPoolExecutor is more efficient.
+
 
 class ImageCompressor:
     """

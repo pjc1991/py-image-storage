@@ -14,6 +14,12 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
+# Note: We don't use aiofiles for file operations because:
+# 1. Each file is processed sequentially within its semaphore slot
+# 2. File I/O operations (rename, remove) are very fast (metadata only)
+# 3. The overhead of aiofiles would exceed any benefits
+# 4. The real bottleneck is image compression (CPU), not file I/O
+
 
 class FileProcessor:
     """

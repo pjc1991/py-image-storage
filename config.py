@@ -2,6 +2,7 @@
 Configuration management for the image storage service.
 """
 import os
+import multiprocessing
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -54,6 +55,13 @@ class Config:
             compressed = os.environ['COMPRESSED']
 
             # Optional variables with defaults
+            # Auto-calculate optimal concurrency if not specified
+            max_concurrent = os.getenv('MAX_CONCURRENT_COMPRESSIONS')
+            if max_concurrent is None:
+                max_concurrent = cls._calculate_optimal_concurrency()
+            else:
+                max_concurrent = int(max_concurrent)
+
             config = cls(
                 uncompressed_path=uncompressed,
                 compressed_path=compressed,
@@ -64,7 +72,7 @@ class Config:
                 cache_maxsize=cls._get_int('CACHE_MAXSIZE', 100),
                 cache_ttl=cls._get_int('CACHE_TTL', 60),
                 log_level=os.getenv('LOG_LEVEL', 'INFO').upper(),
-                max_concurrent_compressions=cls._get_int('MAX_CONCURRENT_COMPRESSIONS', 4),
+                max_concurrent_compressions=max_concurrent,
                 skip_existing_files=os.getenv('SKIP_EXISTING_FILES', 'true').lower() == 'true'
             )
 
@@ -101,6 +109,30 @@ class Config:
             raise ConfigurationError(
                 f"Invalid value for {key}: '{value}'. Must be an integer."
             )
+
+    @staticmethod
+    def _calculate_optimal_concurrency() -> int:
+        """
+        Calculate optimal concurrent compressions based on CPU cores.
+
+        Formula: min(cpu_count, max(2, cpu_count * 0.75))
+        - 2 cores: 2 concurrent
+        - 4 cores: 3-4 concurrent
+        - 8 cores: 6 concurrent
+        - 16 cores: 8 concurrent (capped)
+
+        Returns:
+            Optimal number of concurrent compressions
+        """
+        try:
+            cpu_count = multiprocessing.cpu_count()
+            # Use 75% of CPU cores, but at least 2, max 8
+            optimal = max(2, int(cpu_count * 0.75))
+            optimal = min(optimal, 8)  # Cap at 8 to avoid memory issues
+            return optimal
+        except NotImplementedError:
+            # Fallback if cpu_count is not available
+            return 4
 
     def validate(self) -> None:
         """
