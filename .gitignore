@@ -162,3 +162,5 @@ cython_debug/
 .idea
 .env
 /tests/test_images/
+venv_wsl/
+.claude

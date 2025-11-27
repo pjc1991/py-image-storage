@@ -4,8 +4,8 @@ import os
 import tempfile
 import shutil
 from datetime import datetime
-from task_handler import TaskHandleType, __process_task__arg
 import task_handler
+from task_handler import TaskHandleType
 
 
 class TestMultiprocessingAsyncio(unittest.TestCase):
@@ -30,13 +30,15 @@ class TestMultiprocessingAsyncio(unittest.TestCase):
         test_file = os.path.join(self.source_dir, 'test.psd')
         with open(test_file, 'wb') as f:
             f.write(b'dummy psd content')
-        
+
         # Set up destination path
         dest_file = os.path.join(self.dest_dir, 'test.psd')
-        
+
         # This should not raise a NameError about asyncio
         try:
-            __process_task__arg((test_file, dest_file))
+            # Use getattr to bypass Python's name mangling
+            process_task_arg = getattr(task_handler, '__process_task__arg')
+            process_task_arg((test_file, dest_file))
             # Verify the file was moved
             self.assertTrue(os.path.exists(dest_file), "File should be moved to destination")
             self.assertFalse(os.path.exists(test_file), "Source file should be removed after move")

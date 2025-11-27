@@ -3,7 +3,7 @@ import asyncio
 from PIL import Image
 from cachetools import TTLCache, cached
 
-cache = TTLCache(maxsize=100, ttl=60)
+compression_cache = TTLCache(maxsize=100, ttl=60)
 
 
 def compress_image(file_path: str, new_file_path: str, max_resolution: int = 1920, quality: int = 90) -> bool:
@@ -28,18 +28,16 @@ def compress_image(file_path: str, new_file_path: str, max_resolution: int = 192
         return True
 
 
-@cached(cache=cache)
-def is_key_cached(key: tuple) -> bool:
-    return key in cache
-
-
 async def async_compress_image(file_path: str, new_file_path: str) -> None:
-    if is_key_cached((file_path, new_file_path)):
+    # Check if this file pair has already been processed recently
+    cache_key = (file_path, new_file_path)
+    if cache_key in compression_cache:
         # print(f'duplicate event: {file_path} on async_compress_image')
         return
-    cache[(file_path, new_file_path)] = True
-    file_extension = file_path.split('.')[-1]
-    new_file_path_with_extension_replaced = new_file_path.replace(file_extension, 'webp')
+    compression_cache[cache_key] = True
+    import os
+    base, _ = os.path.splitext(new_file_path)
+    new_file_path_with_extension_replaced = base + '.webp'
     print(f'Compressing {file_path} to {new_file_path_with_extension_replaced}')
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, compress_image, file_path, new_file_path_with_extension_replaced)

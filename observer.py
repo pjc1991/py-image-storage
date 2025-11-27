@@ -13,7 +13,11 @@ load_dotenv()
 
 
 async def periodic_cleanup(dir_path: str, new_dir_path: str, queue: Queue):
-    interval = int(os.getenv('CLEANUP_INTERVAL_SECONDS', 60))
+    try:
+        interval = int(os.getenv('CLEANUP_INTERVAL_SECONDS', 60))
+    except (ValueError, TypeError):
+        print(f'Invalid CLEANUP_INTERVAL_SECONDS value, using default: 60')
+        interval = 60
     print(f'--- starting periodic cleanup every {interval} seconds ---')
     while True:
         await asyncio.sleep(interval)
@@ -26,16 +30,20 @@ async def periodic_cleanup(dir_path: str, new_dir_path: str, queue: Queue):
                 # Skip if file is currently being written to (simple check, handle_file does more)
                 if not os.path.exists(file_path):
                     continue
-                    
-                if dir_path == root:
-                    yyyy_mm = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m')
-                    new_file_path = os.path.join(new_dir_path, yyyy_mm, file)
-                else:
-                    new_file_path = file_path.replace(dir_path, new_dir_path)
-                
-                # Add to queue if not already there (cache check handles duplicates in handler, 
-                # but we can just add it and let handler decide)
-                queue.put_nowait((file_path, new_file_path))
+
+                try:
+                    if dir_path == root:
+                        yyyy_mm = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m')
+                        new_file_path = os.path.join(new_dir_path, yyyy_mm, file)
+                    else:
+                        new_file_path = file_path.replace(dir_path, new_dir_path)
+
+                    # Add to queue if not already there (cache check handles duplicates in handler,
+                    # but we can just add it and let handler decide)
+                    queue.put_nowait((file_path, new_file_path))
+                except (OSError, FileNotFoundError):
+                    # File was deleted between exists check and getmtime call
+                    continue
 
         # 2. Delete empty folders
         for root, dirs, files in os.walk(dir_path, topdown=False):
@@ -77,16 +85,21 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
         for file in files:
             print(f'File: {file}')
             file_path = os.path.join(root, file)
-            if uncompressed_path == root and os.path.isfile(file_path):
-                yyyy_mm = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m')
-                print(f'File {file} is in the root directory')
-                new_file_path = os.path.join(compressed_path, yyyy_mm, file)
+            try:
+                if uncompressed_path == root and os.path.isfile(file_path):
+                    yyyy_mm = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m')
+                    print(f'File {file} is in the root directory')
+                    new_file_path = os.path.join(compressed_path, yyyy_mm, file)
 
-            else:
-                new_file_path = file_path.replace(uncompressed_path, compressed_path)
-            print(f'File path: {file_path}')
-            print(f'New file path: {new_file_path}')
-            que.put_nowait((file_path, new_file_path))
+                else:
+                    new_file_path = file_path.replace(uncompressed_path, compressed_path)
+                print(f'File path: {file_path}')
+                print(f'New file path: {new_file_path}')
+                que.put_nowait((file_path, new_file_path))
+            except (OSError, FileNotFoundError):
+                # File was deleted between directory scan and processing
+                print(f'File {file_path} disappeared before processing')
+                continue
 
     await task_handler.handle_tasks(que)
 
@@ -95,17 +108,21 @@ async def initial_file_handle(uncompressed_path: str, compressed_path: str, que:
 uncompressed = os.getenv('UNCOMPRESSED')
 compressed = os.getenv('COMPRESSED')
 
-if __name__ == "__main__":
-    queue = asyncio.Queue()
 
+async def main():
+    """Main async function that runs all async operations in a single event loop"""
+    queue = asyncio.Queue()
+    
     # check all files in the directory before starting
     # initial file handling
     print(f'Checking files in {uncompressed}')
     print(f'Compressed files will be stored in {compressed}')
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(initial_file_handle(uncompressed, compressed, queue))
-    loop.close()
-
+    await initial_file_handle(uncompressed, compressed, queue)
+    
     # start the observer
     print('--- starting observer ---')
-    asyncio.run(observe_directory(uncompressed, compressed, queue))
+    await observe_directory(uncompressed, compressed, queue)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

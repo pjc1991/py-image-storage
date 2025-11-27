@@ -96,7 +96,12 @@ async def handle_file(file_path: str, new_file_path: str):
             return
 
         # if the file is already smaller than MIN_FILE_SIZE_KB, do not compress it
-        min_size_kb = int(os.getenv('MIN_FILE_SIZE_KB', 1024))
+        try:
+            min_size_kb = int(os.getenv('MIN_FILE_SIZE_KB', 1024))
+        except (ValueError, TypeError):
+            print(f'Invalid MIN_FILE_SIZE_KB value, using default: 1024')
+            min_size_kb = 1024
+
         if os.path.getsize(file_path) < min_size_kb * 1024:
             print(f'File {file_path} is smaller than {min_size_kb}KB')
             os.rename(file_path, new_file_path)
@@ -127,10 +132,12 @@ async def handle_file(file_path: str, new_file_path: str):
             print(f'File {file_path} has been removed at {remove_time}')
 
         # delete the directory if it is empty
-        if not os.listdir(os.path.dirname(file_path)) and \
-                os.path.dirname(file_path) != os.getenv('UNCOMPRESSED'):
-            os.rmdir(os.path.dirname(file_path))
-            print(f'Directory {os.path.dirname(file_path)} has been removed '
+        parent_dir = os.path.dirname(file_path)
+        uncompressed_dir = os.getenv('UNCOMPRESSED')
+        if not os.listdir(parent_dir) and \
+                os.path.normpath(parent_dir) != os.path.normpath(uncompressed_dir):
+            os.rmdir(parent_dir)
+            print(f'Directory {parent_dir} has been removed '
                   f'at {datetime.now()}')
 
     except Exception as e:
