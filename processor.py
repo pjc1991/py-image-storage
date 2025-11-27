@@ -129,8 +129,12 @@ class FileProcessor:
                 success = await self.compressor.compress(source_path, dest_path)
                 if success:
                     # Remove original after successful compression
-                    os.remove(source_path)
-                    logger.debug(f'Removed original: {source_path}')
+                    # Double-check file still exists before removing
+                    if os.path.exists(source_path):
+                        os.remove(source_path)
+                        logger.debug(f'Removed original: {source_path}')
+                    else:
+                        logger.warning(f'Original file already removed: {source_path}')
                 else:
                     logger.error(f'Compression failed, keeping original: {source_path}')
                     return False

@@ -203,6 +203,17 @@ class FileWatcher:
             except asyncio.QueueEmpty:
                 break
 
+        # Deduplicate by source path to prevent race conditions
+        # Keep the last occurrence of each source file
+        seen = {}
+        for source, dest in file_pairs:
+            seen[source] = dest
+
+        file_pairs = [(source, dest) for source, dest in seen.items()]
+
+        if len(file_pairs) < len(seen):
+            logger.debug(f'Deduplicated queue: {len(seen)} → {len(file_pairs)} unique files')
+
         # Process batch
         if file_pairs:
             await self.processor.process_batch(file_pairs)

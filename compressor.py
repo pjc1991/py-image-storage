@@ -49,6 +49,11 @@ class ImageCompressor:
             True if successful, False otherwise
         """
         try:
+            # Check if source file still exists
+            if not os.path.exists(source_path):
+                logger.warning(f'Source file no longer exists: {source_path}')
+                return False
+
             with Image.open(source_path) as img:
                 # Validate image format
                 if img.format not in ('JPEG', 'PNG'):
