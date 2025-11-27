@@ -12,11 +12,52 @@ from file_handler import FileChangeHandler
 load_dotenv()
 
 
+async def periodic_cleanup(dir_path: str, new_dir_path: str, queue: Queue):
+    interval = int(os.getenv('CLEANUP_INTERVAL_SECONDS', 60))
+    print(f'--- starting periodic cleanup every {interval} seconds ---')
+    while True:
+        await asyncio.sleep(interval)
+        print('--- running periodic cleanup ---')
+        
+        # 1. Scan for remaining files (similar to initial_file_handle)
+        for root, dirs, files in os.walk(dir_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                # Skip if file is currently being written to (simple check, handle_file does more)
+                if not os.path.exists(file_path):
+                    continue
+                    
+                if dir_path == root:
+                    yyyy_mm = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m')
+                    new_file_path = os.path.join(new_dir_path, yyyy_mm, file)
+                else:
+                    new_file_path = file_path.replace(dir_path, new_dir_path)
+                
+                # Add to queue if not already there (cache check handles duplicates in handler, 
+                # but we can just add it and let handler decide)
+                queue.put_nowait((file_path, new_file_path))
+
+        # 2. Delete empty folders
+        for root, dirs, files in os.walk(dir_path, topdown=False):
+            if root == dir_path:
+                continue
+            if not os.listdir(root):
+                try:
+                    os.rmdir(root)
+                    print(f'Removed empty directory: {root}')
+                except OSError:
+                    pass # Directory might not be empty or other error
+
+
 async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Queue) -> None:
     event_handler = FileChangeHandler(dir_path, new_dir_path, queue_provided)
     observer = Observer()
     observer.schedule(event_handler, dir_path, recursive=True)
     observer.start()
+    
+    # Start periodic cleanup task
+    cleanup_task = asyncio.create_task(periodic_cleanup(dir_path, new_dir_path, queue_provided))
+    
     try:
         while True:
             if not queue_provided.empty():
@@ -25,6 +66,7 @@ async def observe_directory(dir_path: str, new_dir_path: str, queue_provided: Qu
                 await asyncio.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
+        cleanup_task.cancel()
     observer.join()
 
 

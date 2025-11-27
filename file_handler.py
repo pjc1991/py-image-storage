@@ -44,11 +44,38 @@ class FileChangeHandler(FileSystemEventHandler):
         self.queue.put_nowait((file_path, new_file_path))
 
 
+async def wait_for_file_ready(file_path: str, timeout: int = 10, check_interval: float = 0.5) -> bool:
+    """
+    Wait until the file size stops changing, indicating the copy is complete.
+    """
+    last_size = -1
+    start_time = time.time()
+
+    while time.time() - start_time < timeout:
+        if not os.path.exists(file_path):
+            return False
+        
+        current_size = os.path.getsize(file_path)
+        if current_size == last_size:
+            return True
+        
+        last_size = current_size
+        await asyncio.sleep(check_interval)
+    
+    print(f"Timeout waiting for file {file_path} to stabilize.")
+    return False
+
+
 async def handle_file(file_path: str, new_file_path: str):
     try:
         # print(f'handling file {file_path}')
         if not os.path.exists(file_path):
             # print(f'File {file_path} does not exist')
+            return
+
+        # Wait for file copy to finish
+        if not await wait_for_file_ready(file_path):
+            print(f"Skipping {file_path} as it is not ready or disappeared.")
             return
 
         if not os.path.exists(os.path.dirname(new_file_path)):
@@ -62,9 +89,10 @@ async def handle_file(file_path: str, new_file_path: str):
             #       f'at {datetime.now()}')
             return
 
-        # if the file is already smaller than 1MB, do not compress it
-        if os.path.getsize(file_path) < 1024 * 1024:
-            print(f'File {file_path} is smaller than 1MB')
+        # if the file is already smaller than MIN_FILE_SIZE_KB, do not compress it
+        min_size_kb = int(os.getenv('MIN_FILE_SIZE_KB', 1024))
+        if os.path.getsize(file_path) < min_size_kb * 1024:
+            print(f'File {file_path} is smaller than {min_size_kb}KB')
             os.rename(file_path, new_file_path)
             # print(f'File {file_path} has been moved to {new_file_path} '
             #       f'at {datetime.now()}')
