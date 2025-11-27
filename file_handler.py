@@ -74,6 +74,11 @@ async def handle_file(file_path: str, new_file_path: str):
             # print(f'File {file_path} does not exist')
             return
 
+        # Skip if it's a directory, not a file
+        if os.path.isdir(file_path):
+            # print(f'{file_path} is a directory, skipping')
+            return
+
         # Wait for file copy to finish
         if not await wait_for_file_ready(file_path):
             print(f"Skipping {file_path} as it is not ready or disappeared.")
