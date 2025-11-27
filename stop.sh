@@ -10,7 +10,7 @@
 # Configuration
 SERVICE_NAME="Image Storage Service"
 PID_FILE="service.pid"
-GRACEFUL_TIMEOUT=30  # Seconds to wait for graceful shutdown
+GRACEFUL_TIMEOUT=3  # Seconds to wait for graceful shutdown
 
 # Colors for output
 GREEN='\033[0;32m'
